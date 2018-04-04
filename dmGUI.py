@@ -2,12 +2,15 @@
 import wx
 import os
 import cv2
+import time
 import numpy  
 from pixelCheckDialog import pixelCheckDialog 
 from picDealDialog import picDealDialog
 from picLightenessDialog import picLightenessDialog
 from picFilterDialog import picFilterDialog
 from filterFunction import BGR2RGB
+
+
 class dmFrame(wx.Frame):
     """
     A Frame that Jingdong tool include login 、seckill and so on.
@@ -21,7 +24,19 @@ class dmFrame(wx.Frame):
        # self.makeTool()
         self.makeIco()
         self.Centre()
+        self.welcome()
 
+    #欢迎界面
+    def welcome(self):
+        image = wx.Image('ico\welcome.PNG', wx.BITMAP_TYPE_PNG)
+        temp = image.ConvertToBitmap() 
+        self.picShowFrame.SetClientSize((310, 220))
+        self.picShowFrame.SetBitmap(temp)
+        self.sizer.Layout()
+        super(dmFrame, self).SetClientSize((310, 220))
+        super(dmFrame, self).Layout()
+
+        
     # 初始化面板
     def makePanel(self):
         self.sizer = wx.BoxSizer(wx.VERTICAL)

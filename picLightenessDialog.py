@@ -1,5 +1,6 @@
 import cv2
 import wx
+import numpy
 from filterFunction import BGR2RGB
 class picLightenessDialog(wx.Dialog): 
     #id 140-150
@@ -43,17 +44,17 @@ class picLightenessDialog(wx.Dialog):
     def lightenessChange(self,event):
         x=self.sld1.GetValue()
         y=self.sld2.GetValue()
+
         temp=self.cv_image.copy()  
-        w,h,c=self.cv_image.shape[:3]
-        for i in range(w):
-            for j in range(h):
-                for k in range(c):
-                    temp[i,j][k]*=y/100.+x
-                    if temp[i,j][k]>=255:
-                        temp[i,j][k]=255 
-                    elif temp[i,j][k]<=0: 
-                        temp[i,j][k]=0
-        self.adaptiveSize(temp)
+        (B,G,R) = cv2.split(temp.astype(numpy.int16))
+        nB=B*y/100.+x
+        nG=G*y/100.+x
+        nR=R*y/100.+x
+        img=cv2.merge([nB,nG,nR])
+        img[img>255]=255
+        img[img<0]=0
+        img=img.astype(numpy.uint8)
+        self.adaptiveSize(img)
         
 
     def adaptiveSize(self,cv_image):
@@ -62,5 +63,5 @@ class picLightenessDialog(wx.Dialog):
         self.picShow.SetClientSize((width, height))
         self.picShow.SetBitmap(pic)
         self.vbox.Layout()
-        super(picLightenessDialog, self).SetClientSize((width, height))
+        super(picLightenessDialog, self).SetClientSize((width*1.1, height*1.3))
         super(picLightenessDialog, self).Layout()

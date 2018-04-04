@@ -5,12 +5,8 @@ from math import sqrt,atan2,cos,sin
 from random import randint
 
 def BGR2RGB(src):
-    img=src.copy()
-    height,width,channel=src.shape[:3] 
-    for y in range(height-1):
-        for x in range(width-1): 
-            img[y][x][0]=src[y][x][2]  
-            img[y][x][2]=src[y][x][0] 
+    (B,G,R) = cv2.split(src)
+    img=cv2.merge([R,G,B])
     return img
 
 #-------------------------颜色变化-------------------------------------------
@@ -39,18 +35,33 @@ def cameo(src):
     height,width,channel=src.shape[:3] 
     if channel!=3:
         src = cv2.cvtColor(src, cv2.COLOR_GRAY2RGB)
-    img=numpy.zeros((height, width, 3), dtype=numpy.uint8) 
-    for y in range(1,height-1):  
-        for x in range(1,width-1):
-            for i in range(3):
-                tmp = int(src[y+1][x+1][i])-int(src[y-1][x-1][i])+128#浮雕  
-                if tmp<0:
-                    img[y][x][i]=0  
-                elif tmp>255:
-                    img[y][x][i]=255  
-                else:  
-                    img[y][x][i]=tmp
-    return img
+
+    (B,G,R) = cv2.split(src.astype(numpy.int16))
+    height,width=B.shape[:2] 
+    nB1=numpy.zeros((height, width), dtype=numpy.int16) 
+    nG1=numpy.zeros((height, width), dtype=numpy.int16) 
+    nR1=numpy.zeros((height, width), dtype=numpy.int16)
+
+    nB2=numpy.zeros((height, width), dtype=numpy.int16) 
+    nG2=numpy.zeros((height, width), dtype=numpy.int16) 
+    nR2=numpy.zeros((height, width), dtype=numpy.int16)
+
+    nB1[0:height-2][0:width-1]=B[1:height][1:width]
+    nG1[0:height-2][0:width-1]=G[1:height][1:width]
+    nR1[0:height-2][0:width-1]=R[1:height][1:width]
+
+    nB2[1:height][1:width]=B[0:height-2][0:width-1]
+    nG2[1:height][1:width]=G[0:height-2][0:width-1]
+    nR2[1:height][1:width]=R[0:height-2][0:width-1]
+    nB=nB1-nB2
+    nG=nG1-nG2
+    nR=nR1-nR2
+    img=cv2.merge([nB,nG,nR])
+
+    img+=128            
+    img[img>255]=255
+    img[img<0]=0
+    return img.astype(numpy.uint8)
 #    cv2.imshow("浮雕",img)
 #    cv2.waitKey(0)
 #src = cv2.imread('c:\\pic\\2.png') 
@@ -62,18 +73,33 @@ def carve(src):
     height,width,channel=src.shape[:3] 
     if channel!=3:
         src = cv2.cvtColor(src, cv2.COLOR_GRAY2RGB)
-    img=numpy.zeros((height, width, 3), dtype=numpy.uint8) 
-    for y in range(1,height-1):  
-        for x in range(1,width-1):
-            for i in range(3):
-                tmp = int(src[y][x][i])-int(src[y-1][x-1][i])+128#浮雕  
-                if tmp<0:
-                    img[y][x][i]=0  
-                elif tmp>255:
-                    img[y][x][i]=255  
-                else:  
-                    img[y][x][i]=tmp
-    return img
+
+    (B,G,R) = cv2.split(src.astype(numpy.int16))
+    height,width=B.shape[:2] 
+    nB1=numpy.zeros((height, width), dtype=numpy.int16) 
+    nG1=numpy.zeros((height, width), dtype=numpy.int16) 
+    nR1=numpy.zeros((height, width), dtype=numpy.int16)
+
+    nB2=numpy.zeros((height, width), dtype=numpy.int16) 
+    nG2=numpy.zeros((height, width), dtype=numpy.int16) 
+    nR2=numpy.zeros((height, width), dtype=numpy.int16)
+
+    nB1[0:height-2][0:width-1]=B[1:height][1:width]
+    nG1[0:height-2][0:width-1]=G[1:height][1:width]
+    nR1[0:height-2][0:width-1]=R[1:height][1:width]
+
+    nB2[1:height][1:width]=B[0:height-2][0:width-1]
+    nG2[1:height][1:width]=G[0:height-2][0:width-1]
+    nR2[1:height][1:width]=R[0:height-2][0:width-1]
+    nB=nB2-nB1
+    nG=nG2-nG1
+    nR=nR2-nR1
+    img=cv2.merge([nB,nG,nR])
+
+    img+=128            
+    img[img>255]=255
+    img[img<0]=0
+    return img.astype(numpy.uint8)
 #    cv2.imshow("浮雕",img)
 #    cv2.waitKey(0)
 #src = cv2.imread('c:\\pic\\2.png') 
@@ -145,13 +171,13 @@ def sketch(src):
     #反色  
     gray1=255-gray0
     #高斯模糊,高斯核的Size与最后的效果有关  
-    gray1=cv2.GaussianBlur(gray1,(11,11),0)
+    gray1=cv2.GaussianBlur(gray1,(11,11),0).astype(numpy.int)
+    gray0=gray0.astype(numpy.int)
     #融合：颜色减淡  
-    img=numpy.zeros((height, width, 1), dtype=numpy.uint8)
-    for y in range(height-1):  
-        for x in range(width-1):
-            img[y][x] =min((int(gray0[y][x]) +(int(gray0[y][x]) *int(gray1[y][x]))/(256-int(gray1[y][x]))),255)
-    return cv2.cvtColor(img,cv2.COLOR_GRAY2BGR)
+    img=gray0+(gray0*gray1)/(256-gray1)
+    img[img>255]=255
+    img=cv2.merge([img,img,img])
+    return img.astype(numpy.uint8)
 #    cv2.imshow("素描",img)  
 #    cv2.waitKey(0)
 #src = cv2.imread('c:\\pic\\test.png') 
@@ -179,32 +205,16 @@ def frostedGlass(src):
 
 #---------------------------------怀旧-----------------------------------------
 def reminiscence(src): 
-    height,width,channel=src.shape[:3] 
-    img=src.copy()
-    for y in range(height-1):  
-        for x in range(width-1):
-            B=src[y][x][0]  
-            G=src[y][x][1]  
-            R=src[y][x][2]  
-            newB=0.272*R+0.534*G+0.131*B;  
-            newG=0.349*R+0.686*G+0.168*B;  
-            newR=0.393*R+0.769*G+0.189*B;  
-            if newB<0:
-                newB=0
-            if newB>255:
-                newB=255  
-            if newG<0:
-                newG=0 
-            if newG>255:
-                newG=255  
-            if newR<0:
-                newR=0 
-            if newR>255:
-                newR=255  
-            img[y][x][0] = numpy.uint8(newB)  
-            img[y][x][1] = numpy.uint8(newG) 
-            img[y][x][2] = numpy.uint8(newR) 
-    return img
+
+    (B,G,R) = cv2.split(src.astype(numpy.int16))
+    nB=0.272*R+0.534*G+0.131*B
+    nG=0.349*R+0.686*G+0.168*B 
+    nR=0.393*R+0.769*G+0.189*B
+    img=cv2.merge([nB,nG,nR])
+    img[img>255]=255
+    img[img<0]=0
+    return img.astype(numpy.uint8)
+
 #    cv2.imshow("怀旧色",img)
 #    cv2.waitKey()
 #src = cv2.imread('c:\\pic\\test.png') 
@@ -213,32 +223,14 @@ def reminiscence(src):
 
 #--------------------------------连环画---------------------------------------
 def comicBook(src): 
-    height,width,channel=src.shape[:3] 
-    img=src.copy()
-    for y in range(height-1):  
-        for x in range(width-1):
-            B=int(src[y][x][0])  
-            G=int(src[y][x][1])  
-            R=int(src[y][x][2])  
-            newB=abs(B-G+B+R)*G/256
-            newG=abs(B-G+B+R)*R/256 
-            newR=abs(G-B+G+R)*R/256  
-            if newB<0:
-                newB=0
-            if newB>255:
-                newB=255  
-            if newG<0:
-                newG=0 
-            if newG>255:
-                newG=255  
-            if newR<0:
-                newR=0 
-            if newR>255:
-                newR=255  
-            img[y][x][0] = numpy.uint8(newB)  
-            img[y][x][1] = numpy.uint8(newG) 
-            img[y][x][2] = numpy.uint8(newR) 
-    return img
+    (B,G,R) = cv2.split(src.astype(numpy.int))
+    nB=abs(B-G+B+R)*G/256
+    nG=abs(B-G+B+R)*R/256 
+    nR=abs(G-B+G+R)*R/256  
+    img=cv2.merge([nB,nG,nR])
+    img[img>255]=255
+    img[img<0]=0
+    return img.astype(numpy.uint8)
 #    cv2.imshow("怀旧色",img)
 #    cv2.waitKey()
 #src = cv2.imread('c:\\pic\\test.png') 
@@ -247,32 +239,14 @@ def comicBook(src):
 
 #-----------------------------------熔铸----------------------------------------
 def casting(src): 
-    height,width,channel=src.shape[:3] 
-    img=src.copy()
-    for y in range(height-1):  
-        for x in range(width-1):
-            B=int(src[y][x][0])  
-            G=int(src[y][x][1])  
-            R=int(src[y][x][2])  
-            newB=B*128/(G+R +1)
-            newG=G*128/(R+B +1)
-            newR=R*128/(G+B +1)
-            if newB<0:
-                newB=0
-            if newB>255:
-                newB=255  
-            if newG<0:
-                newG=0 
-            if newG>255:
-                newG=255  
-            if newR<0:
-                newR=0 
-            if newR>255:
-                newR=255  
-            img[y][x][0] = numpy.uint8(newB)  
-            img[y][x][1] = numpy.uint8(newG) 
-            img[y][x][2] = numpy.uint8(newR) 
-    return img
+    (B,G,R) = cv2.split(src.astype(numpy.int))
+    nB=B*128/(G+R +1)
+    nG=G*128/(R+B +1)
+    nR=R*128/(G+B +1)
+    img=cv2.merge([nB,nG,nR])
+    img[img>255]=255
+    img[img<0]=0
+    return img.astype(numpy.uint8)
 #    cv2.imshow("熔铸",img)
 #    cv2.waitKey()
 #src = cv2.imread('c:\\pic\\test.png') 
@@ -281,32 +255,14 @@ def casting(src):
 
 #---------------------------冰冻-----------------------------------
 def frozen(src): 
-    height,width,channel=src.shape[:3] 
-    img=src.copy()
-    for y in range(height-1):  
-        for x in range(width-1):
-            B=int(src[y][x][0])  
-            G=int(src[y][x][1])  
-            R=int(src[y][x][2])  
-            newB=(B-G-R)*3/2
-            newG=(G-R-B)*3/2
-            newR=(R-G-B)*3/2
-            if newB<0:
-                newB=-newB
-            if newB>255:
-                newB=255  
-            if newG<0:
-                newG=-newG 
-            if newG>255:
-                newG=255  
-            if newR<0:
-                newR=-newR
-            if newR>255:
-                newR=255  
-            img[y][x][0] = numpy.uint8(newB)  
-            img[y][x][1] = numpy.uint8(newG) 
-            img[y][x][2] = numpy.uint8(newR) 
-    return img
+    (B,G,R) = cv2.split(src.astype(numpy.int))
+    nB=(B-G-R)*3/2
+    nG=(G-R-B)*3/2
+    nR=(R-G-B)*3/2
+    img=cv2.merge([nB,nG,nR])
+    img[img>255]=255
+    img[img<0]=-img[img<0]
+    return img.astype(numpy.uint8)
 #    cv2.imshow("冰冻",img)
 #    cv2.waitKey()
 #src = cv2.imread('c:\\pic\\test.png') 
@@ -362,5 +318,6 @@ def eclosion(src):
 #eclosion(src)
 
 def binaryzation(src):
-    ret,img=cv2.threshold(src,127,255,cv2.THRESH_BINARY)  
-    return img
+    src=cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
+    ret,img=cv2.threshold(src,100,255,cv2.THRESH_BINARY)
+    return cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)

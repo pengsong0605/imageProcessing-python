@@ -60,7 +60,7 @@ class picDealDialog(wx.Dialog):
         self.picShow.SetClientSize((width, height))
         self.picShow.SetBitmap(pic)
         self.vbox.Layout()
-        super(picDealDialog, self).SetClientSize((width, height))
+        super(picDealDialog, self).SetClientSize((width*1.1, height*1.2))
         super(picDealDialog, self).Layout()
 
     def bindZoom(self):

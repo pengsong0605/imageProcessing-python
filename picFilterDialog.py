@@ -45,6 +45,6 @@ class picFilterDialog(wx.Dialog):
         self.picShow.SetClientSize((width, height))
         self.picShow.SetBitmap(pic)
         self.vbox.Layout()
-        super(picFilterDialog, self).SetClientSize((width, height))
+        super(picFilterDialog, self).SetClientSize((width*1.1, height*1.1))
         super(picFilterDialog, self).Layout()
 
