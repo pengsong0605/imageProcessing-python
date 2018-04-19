@@ -12,9 +12,6 @@ from filterFunction import BGR2RGB
 
 
 class dmFrame(wx.Frame):
-    """
-    A Frame that Jingdong tool include login 、seckill and so on.
-    """
     #初始化
     def __init__(self, *args, **kw):
         # ensure the parent's __init__ is called
